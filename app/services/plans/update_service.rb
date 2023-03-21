@@ -58,13 +58,16 @@ module Plans
     end
 
     def create_charge(plan, params)
-      plan.charges.create!(
+      charge = plan.charges.new(
         billable_metric_id: params[:billable_metric_id],
         amount_currency: params[:amount_currency],
         charge_model: params[:charge_model]&.to_sym,
         properties: params[:properties] || {},
         group_properties: (params[:group_properties] || []).map { |gp| GroupProperty.new(gp) },
       )
+      charge.instant = params[:instant] || false if License.premium?
+      charge.save!
+      charge
     end
 
     def process_charges(plan, params_charges)
@@ -78,7 +81,9 @@ module Plans
           # NOTE: charges cannot be edited if plan is attached to a subscription
           unless plan.attached_to_subscriptions?
             payload_charge[:group_properties]&.map! { |gp| GroupProperty.new(gp) }
-            charge.update(payload_charge)
+            instant = payload_charge.delete(:instant)
+            charge.instant = instant || false if License.premium?
+            charge.update!(payload_charge)
             charge
           end
 

@@ -12,6 +12,13 @@ module ScenariosHelper
     delete_with_token(organization, "/api/v1/customers/#{customer.external_id}")
   end
 
+  def fetch_current_usage(customer:, subscription: customer.subscriptions.first)
+    get_with_token(
+      organization,
+      "/api/v1/customers/#{customer.external_id}/current_usage?external_subscription_id=#{subscription.external_id}",
+    )
+  end
+
   ### Plans
 
   def delete_plan(plan)
@@ -54,6 +61,14 @@ module ScenariosHelper
 
   def create_wallet(params)
     post_with_token(organization, '/api/v1/wallets', { wallet: params })
+  end
+
+  ### Events
+
+  def create_event(params)
+    post_with_token(organization, '/api/v1/events', { event: params })
+
+    perform_all_enqueued_jobs
   end
 
   # This performs any enqueued-jobs, and continues doing so until the queue is empty.

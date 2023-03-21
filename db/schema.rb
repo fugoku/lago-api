@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_02_27_145104) do
+ActiveRecord::Schema[7.0].define(version: 2023_03_13_145506) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pgcrypto"
   enable_extension "plpgsql"
@@ -296,6 +296,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_02_27_145104) do
     t.uuid "invoiceable_id"
     t.integer "events_count"
     t.uuid "group_id"
+    t.uuid "instant_event_id"
     t.index ["applied_add_on_id"], name: "index_fees_on_applied_add_on_id"
     t.index ["charge_id"], name: "index_fees_on_charge_id"
     t.index ["group_id"], name: "index_fees_on_group_id"
@@ -343,6 +344,16 @@ ActiveRecord::Schema[7.0].define(version: 2023_02_27_145104) do
     t.index ["membership_id"], name: "index_invites_on_membership_id"
     t.index ["organization_id"], name: "index_invites_on_organization_id"
     t.index ["token"], name: "index_invites_on_token", unique: true
+  end
+
+  create_table "invoice_metadata", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "invoice_id", null: false
+    t.string "key", null: false
+    t.string "value", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["invoice_id", "key"], name: "index_invoice_metadata_on_invoice_id_and_key", unique: true
+    t.index ["invoice_id"], name: "index_invoice_metadata_on_invoice_id"
   end
 
   create_table "invoice_subscriptions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -418,6 +429,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_02_27_145104) do
     t.integer "invoice_grace_period", default: 0, null: false
     t.string "timezone", default: "UTC", null: false
     t.string "document_locale", default: "en", null: false
+    t.string "email_settings", default: [], null: false, array: true
     t.index ["api_key"], name: "index_organizations_on_api_key", unique: true
     t.check_constraint "invoice_grace_period >= 0", name: "check_organizations_on_invoice_grace_period"
   end
@@ -637,6 +649,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_02_27_145104) do
   add_foreign_key "groups", "groups", column: "parent_group_id"
   add_foreign_key "invites", "memberships"
   add_foreign_key "invites", "organizations"
+  add_foreign_key "invoice_metadata", "invoices"
   add_foreign_key "invoice_subscriptions", "invoices"
   add_foreign_key "invoice_subscriptions", "subscriptions"
   add_foreign_key "invoices", "customers"
